@@ -64,10 +64,53 @@ class contest {
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Here below you will need to write the code to solve the contest problem
     ///////////////////////////////////////////////////////////////////////////////////////////
-
-
     
-          
+    // Store values and occurrences
+    $values = array();
+    
+    // Find the valid attributes of the class
+    // Mostly using System Catalog Virtual Class
+    $req = cubrid_execute( $this->conn, '
+      SELECT a.class_name, a.attr_name FROM db_class c
+      join db_attribute a ON c.class_name = a.class_name
+      WHERE c.owner_name = CURRENT_USER
+      AND data_type NOT IN {\'NUMERIC\',\'DECIMAL\',\'DEC\'}
+      ORDER BY 1;
+    ');
+    
+    // Fetch valid attributes and classes
+    while( $attr = cubrid_fetch_assoc( $req ) ) {
+      // Select values for found columns
+      $values_req = cubrid_execute( $this->conn, 'SELECT '.$attr['attr_name'].' FROM '.$attr['class_name'].';' );
+      // Walk through the found values
+      while( $value = cubrid_fetch( $values_req, CUBRID_NUM ) ) {
+        // Check if this one is numeric
+        if( !ctype_digit( $value[0] ) ) {
+          // Add value to list or increment it's appearence
+          // Without this `if` I can win some ms but notices will kill me
+          if ( !isset( $values[ $value[0] ] ) )
+            $values[ $value[0] ] = 1;
+          else
+            $values[ $value[0] ] += 1;
+        }
+      }
+      // End values request
+      cubrid_close_request( $values_req );
+    }
+    // Close the request for attributes
+    cubrid_close_request( $req );
+    
+    // Sort the list of values by occurrences
+    arsort( $values );
+    // Get the first one (the most duplicated) and save to DB
+    $save_req = cubrid_execute( $this->conn, '
+      INSERT INTO results (userid,total_occurrences,most_duplicated_value) VALUES (
+      \'' . $this->userid . '\',
+      ' . reset( $values ) . ',
+      \'' . key($values) . '\' );
+    ');
+    cubrid_close_request( $save_req );
+    
     ///////////////////////////////////////////////////////////////////////////////////////////
     // !!!do not modify the code from here below!!!
     ///////////////////////////////////////////////////////////////////////////////////////////

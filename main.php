@@ -9,7 +9,7 @@
   
   // !!! Make sure you update the value with your own user id, 
   // the same one you used to register for the contest !!!
-  $userid = "...write your own user id in here, please...";
+  $userid = "Suscov";
   
   //database name
   $dbname = "contest"; //do not change this value
